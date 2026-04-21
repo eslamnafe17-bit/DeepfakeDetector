@@ -137,17 +137,20 @@ This deepfake detection system supports various popular deepfake datasets. Below
 3. Organize as shown in the training section below
 
 #### Option 2: Use Dataset Preparation Tools
-Use our built-in tools to prepare datasets:
+Use our built-in tools to prepare datasets. Edit the source/destination paths inside each script before running:
 
 ```bash
-# Split video dataset into frames
-python tools/split_video_dataset.py --input_dir raw_videos --output_dir data
+# Extract frames from videos (every 15th frame) and split into train/val
+# Edit source & dest paths in the script, then run:
+python tools/split_video_dataset.py
 
-# Split dataset into train/validation
-python tools/split_train_val.py --input_dir data --train_ratio 0.8
+# Split an existing image dataset into 80/20 train/validation
+# Edit source_dataset & destination paths in the script, then run:
+python tools/split_train_val.py
 
-# General dataset splitting
-python tools/split_dataset.py --input_dir your_dataset --output_dir data
+# Extract frames from a single video directory
+# Edit video_dir & output_dir in the script, then run:
+python tools/split_dataset.py
 ```
 
 ### 📋 Dataset Recommendations
@@ -242,12 +245,13 @@ tensorboard --logdir lightning_logs
 ├── models/
 │   └── best_model-v3.pt          # Trained model weights
 ├── tools/                        # Dataset preparation utilities
-│   ├── split_dataset.py
-│   ├── split_train_val.py
-│   └── split_video_dataset.py
+│   ├── export_to_pt.py           # .ckpt → .pt model converter
+│   ├── split_dataset.py          # Video frame extractor
+│   ├── split_train_val.py        # 80/20 train/val splitter
+│   └── split_video_dataset.py    # Video-aware dataset splitter
 └── inference/
     ├── export_onnx.py            # ONNX export
-    └── video_inference.py        # Video processing
+    └── video_inference.py        # Multi-frame video inference
 ```
 
 ## 🛠️ Model Architecture
@@ -259,10 +263,12 @@ tensorboard --logdir lightning_logs
 
 ## 📊 Performance
 
-The model achieves:
-- High accuracy on diverse deepfake datasets
-- Real-time inference capabilities
-- Robust performance on compressed/low-quality media
+- **Inference Speed**: Real-time on GPU, ~200ms per image on CPU
+- **Input Support**: Images (.jpg, .png) and videos (.mp4, .mov)
+- **Video Analysis**: 10-frame uniform sampling with probability averaging
+- **Robustness**: Tested with Gaussian blur and JPEG compression noise simulation (`realeval.py`)
+
+> **Note**: Accuracy metrics depend on your training dataset. Monitor `val_loss` and `val_acc` via TensorBoard during training.
 
 ## 🔧 Advanced Usage
 
@@ -276,19 +282,20 @@ python inference/export_onnx.py
 
 ### Batch Evaluation
 
-Process multiple files programmatically:
+Evaluate a folder of real-world samples with optional noise simulation:
 
-```python
-from web-app import predict_file
+```bash
+# Place test images/videos in realworld_samples/ folder, then run:
+python realeval.py
+```
 
-results = []
-for file_path in image_paths:
-    prediction, confidence, preview = predict_file(file_path)
-    results.append({
-        'file': file_path,
-        'prediction': prediction,
-        'confidence': confidence
-    })
+### Export Checkpoint to PyTorch
+
+Convert a Lightning `.ckpt` to a standalone `.pt` file:
+
+```bash
+# Edit ckpt_path and pt_output in the script, then run:
+python tools/export_to_pt.py
 ```
 
 ## 🤝 Contributing
